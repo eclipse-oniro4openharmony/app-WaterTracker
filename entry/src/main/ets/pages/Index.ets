@@ -1,91 +1,112 @@
 import { Utility } from '../model/Utility';
 
-let AlignRue: Record<string, Record<string, string | VerticalAlign | HorizontalAlign>> = {
-  'top': { 'anchor': '__container__', 'align': VerticalAlign.Top },
-  'right': { 'anchor': '__container__', 'align': HorizontalAlign.Center }
-}
-const perc = "70%"
-let storage = LocalStorage.getShared();
+const storage = LocalStorage.getShared();
 
 @Entry(storage)
 @Component
 struct Index {
-  @State private glassState: number = 0;
   @LocalStorageProp('water_level') private waterState: number = 0;
+  @LocalStorageProp('data_ready') private dataReady: boolean = false;
 
-  onPageShow(): void {
-    this.calculateWateredState(); //recalculate the watered state to update the graphic
+  private getGlassLevel(): number {
+    if (this.waterState <= 0) {
+      return 0;
+    }
+    if (this.waterState < 750) {
+      return 1;
+    }
+    if (this.waterState < 1250) {
+      return 2;
+    }
+    if (this.waterState < Utility.dailyGlassGoal) {
+      return 3;
+    }
+    return 4;
   }
 
-  private calculateWateredState(): void {
-    let currTime = new Date().getTime();
-    let morning = new Date().setHours(6, 0, 0, 0);
-    let timeDifInHours = (currTime - morning) / 3600000; //we assume 6 AM to be start of the day
-    let wateredCoefficient = this.waterState / timeDifInHours;
-    if (wateredCoefficient < Utility.unWateredState) {
-      this.glassState = Utility.sadGlass;
-    } else if (wateredCoefficient < Utility.midWateredState) {
-      this.glassState = Utility.neutralGlass;
-    } else {
-      this.glassState = Utility.happyGlass;
+  private getGlassImage(): Resource {
+    switch (this.getGlassLevel()) {
+      case 0:
+        return $r('app.media.glass00');
+      case 1:
+        return $r('app.media.glass01');
+      case 2:
+        return $r('app.media.glass02');
+      case 3:
+        return $r('app.media.glass03');
+      default:
+        return $r('app.media.glass04');
     }
   }
 
   build() {
     Column() {
-      Stack({ alignContent: Alignment.TopStart }) {
-        Navigator({ target: 'pages/SettingsMenu', type: NavigationType.Push }) {
-          Image($r('app.media.menu'))
-            .id('settings')
-            .autoResize(true)
-            .height('10%')
-            .padding(10)
-        }
-        .zIndex(5)
-
-        Column() {
-          if (this.glassState == 0) {
-            Image($r('app.media.sadGlass'))
-              .height(perc)
-          } else if (this.glassState == 1) {
-            Image($r("app.media.neutralGlass"))
-              .height(perc)
-          } else {
-            Image($r('app.media.happyGlass'))
-              .height(perc)
-          }
-        }
-        .padding(20)
-        .width('100%')
-        .alignRules(AlignRue)
-      }
-
-      Divider().strokeWidth(20).color($r('app.color.water_background'))
-
-      Button() {
-        Text($r('app.string.button_drink_add'))
-          .fontSize($r('app.integer.font_size_medium'))
-          .margin(10)
+      Row() {
+        Text('Today')
+          .fontSize(32)
           .fontWeight(FontWeight.Bold)
+          .fontColor($r('app.color.ink'))
+
+        Blank()
+
+        Button('Settings')
+          .id('settings')
+          .fontSize(15)
+          .fontColor($r('app.color.purple'))
+          .backgroundColor($r('app.color.surface'))
+          .borderRadius(16)
+          .height(44)
+          .enabled(this.dataReady)
+          .onClick(() => {
+            this.getUIContext().getRouter().pushUrl({ url: 'pages/SettingsMenu' });
+          })
       }
-      .onClick(() => {
-        this.getUIContext().getRouter().pushUrl({
-          url: 'pages/AddWaterMenu'
+      .width('100%')
+      .margin({ bottom: 22 })
+
+      Column({ space: 4 }) {
+        Image(this.getGlassImage())
+          .width(174)
+          .height(208)
+          .objectFit(ImageFit.Contain)
+
+        Text(this.waterState.toString())
+          .fontSize(58)
+          .fontWeight(FontWeight.Bold)
+          .fontColor($r('app.color.ink'))
+
+        Text('ml logged today')
+          .fontSize(16)
+          .fontColor($r('app.color.muted'))
+
+        Text('Goal: 2,000 ml')
+          .fontSize(14)
+          .fontColor($r('app.color.muted'))
+          .margin({ top: 10 })
+      }
+      .width('100%')
+      .padding({ top: 18, bottom: 30, left: 20, right: 20 })
+      .backgroundColor($r('app.color.surface'))
+      .borderRadius(28)
+
+      Blank()
+
+      Button('Add water')
+        .width('100%')
+        .height(58)
+        .fontSize(18)
+        .fontWeight(FontWeight.Bold)
+        .fontColor($r('app.color.surface'))
+        .backgroundColor($r('app.color.purple'))
+        .borderRadius(18)
+        .enabled(this.dataReady)
+        .onClick(() => {
+          this.getUIContext().getRouter().pushUrl({ url: 'pages/AddWaterMenu' });
         })
-      })
-      .backgroundColor(Color.Yellow)
-      .alignRules({
-        top: { anchor: "glass_image", align: VerticalAlign.Bottom },
-        middle: { anchor: "__container__", align: HorizontalAlign.Center }
-      })
-
-      Divider().strokeWidth(20).color($r('app.color.water_background'))
-
-      Text("Drank " + this.waterState + " milliliters of water today!")
     }
     .width('100%')
     .height('100%')
-    .backgroundColor($r('app.color.water_background'))
-
+    .padding({ top: 24, bottom: 24, left: 24, right: 24 })
+    .backgroundColor($r('app.color.page'))
   }
 }

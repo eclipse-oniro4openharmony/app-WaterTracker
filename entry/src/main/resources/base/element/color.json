@@ -1,16 +1,13 @@
 {
   "color": [
-    {
-      "name": "start_window_background",
-      "value": "#FFFFFF"
-    },
-    {
-      "name": "water_background",
-      "value": "#69D7F0"
-    },
-    {
-      "name": "divider_colour",
-      "value": "#F1F3F5"
-    }
+    { "name": "start_window_background", "value": "#F8F3FF" },
+    { "name": "page", "value": "#F8F3FF" },
+    { "name": "surface", "value": "#FFFFFF" },
+    { "name": "ink", "value": "#0F0026" },
+    { "name": "muted", "value": "#655B73" },
+    { "name": "purple", "value": "#6024B5" },
+    { "name": "cyan", "value": "#00C9E5" },
+    { "name": "pink", "value": "#FF27B7" },
+    { "name": "yellow", "value": "#FFEE4D" }
   ]
 }
