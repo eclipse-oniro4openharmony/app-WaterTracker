@@ -15,6 +15,7 @@ export default class EntryAbility extends UIAbility {
 
   onDestroy(): void {
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onDestroy');
+    this.waterKeeper.dispose();
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
@@ -37,12 +38,16 @@ export default class EntryAbility extends UIAbility {
   onForeground(): void {
     // Ability has brought to foreground
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onForeground');
-    // this.waterKeeper.getValuesFromPersistence();
+    this.waterKeeper.refreshCurrentDay().catch((error: Error) => {
+      hilog.error(0x0000, 'WaterKeeper', 'Failed to change day: %{public}s', String(error));
+    });
   }
 
   onBackground(): void {
     // Ability has back to background
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onBackground');
-    this.waterKeeper.saveToPersistence();
+    this.waterKeeper.saveToPersistence().catch((error: Error) => {
+      hilog.error(0x0000, 'WaterKeeper', 'Failed to save water data: %{public}s', String(error));
+    });
   }
 }

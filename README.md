@@ -1,119 +1,69 @@
 # Water Tracker
-## Introduction
 
-Water Tracker shows a simple demo of in-app communication on an `OpenHarmony` device.
+Water Tracker is an OpenHarmony phone and tablet example for logging daily water intake and sharing state between an ArkUI interface and persistent storage.
 
-![image](images/screenshot.png)
+## What this example demonstrates
 
-### Table of contents
- [Functionaility](#functionaility)  
- [General Process](#general-process)
+| Capability | API or platform service | Where to look |
+| --- | --- | --- |
+| Show today's total and update it when water is added | ArkUI `LocalStorage`, `@LocalStorageProp`, and `@LocalStorageLink` | [Index.ets](entry/src/main/ets/pages/Index.ets), [AddWaterMenu.ets](entry/src/main/ets/pages/AddWaterMenu.ets) |
+| Change the large and small glass sizes | ArkUI `@LocalStorageLink` | [SettingsMenu.ets](entry/src/main/ets/pages/SettingsMenu.ets) |
+| Restore and save the daily total and glass sizes | `@kit.ArkData` Preferences | [WaterKeeper.ets](entry/src/main/ets/entryability/WaterKeeper.ets) |
 
-## Functionaility
-    •  Create a simple water tracking app. Enable the possibility of changing the default values within the app.
-    •  Apart from being a tracking app, this project aims to show how to access persistance storage and how to perfom in-app communication.
+## Preview
 
-## General Process
-This part introduces the general process of the application development  
-1. [Logic and functionailities](#logic-and-functionailities)
-2. [Checking and testing](#checking-and-testing)
-    
-### Logic and functionailities
-- The basic logic of the app is as follows:
-  -  Upon launch, see if there is saved data within the built-in database (called `Preferences`)
-	-  Propagate the saved data through the app
-  -  When the user logs in a glass of water, propagate the data and save it to preferences
+![Water Tracker running on a phone, showing 1,500 ml logged today](images/phone-today.jpeg)
 
->**Using data persistance - Preferences**
+## Requirements
 
-- Within your business logic:
-	initialize data preferences and check if there is any data stored.
-	
-	When calling getPreferences, we have to provide a name for the storage we'll be using. 
-	Inside, data_preferences is structured as a <key,value> pair.
+- OpenHarmony 6.1 (API 23) SDK and command-line tools. The build profile compiles and targets API 23 and declares compatibility from API 18.
+- Node.js 22, Java 17, and `@oniroproject/oniro-app` 0.10.0 match the CI build setup.
+- An OpenHarmony phone, tablet, or emulator to run the app. The module declares `default` and `tablet` device types.
+- Local development signing for a device build. The app declares no permissions and needs no external service.
 
-```typescript
-import data_preferences from '@ohos.data.preferences';
-  (...)
-private dataPreferences: data_preferences.Preferences = null;
+## Build and run
 
-constructor(context: Context, storage: LocalStorage) {
-    data_preferences.getPreferences(context, "preferencesName")
-        .then((pref) => {
-	    this.dataPreferences = pref;
-	    this.preparePersistence();
-        })
-}
-```
-> **Note**  
-> The `context` above is of `UIAbility.context` type
+From the repository root in PowerShell:
 
-- Once the dataPreferences variable has been initialized, you can get the stored values. 
-- The defaultValue is the value that will be used if nothing was previously saved.
-
-
-```typescript
-this.dataPreferences.get("keyName", "defaultValue").then((value) => {
-    console.log("Loaded data = " + value);
-});
-
+```powershell
+npm install -g @oniroproject/oniro-app@0.10.0
+oniro-app sdk install 6.1
+oniro-app cmdtools install
+Copy-Item build-profile.example.json5 build-profile.json5
+oniro-app sign
+oniro-app build
 ```
 
-> **Note**  
-> Both saving and loading from `Preferences` is asynchronous.
+The example profile contains no signing credentials. Copy it and run `oniro-app sign` once per checkout; signing updates its configuration and creates local signing files. The local `build-profile.json5` and `signatures/` are ignored by Git. Later builds need only `oniro-app build`.
 
-```typescript
-this.dataPreferences.put("keyName", "new value")
-    .then(() => {
-        this.dataPreferences.flush();
-    });
-```
+Connect an OpenHarmony device or start an emulator, then use `oniro-app devices` to find its serial. Run `oniro-app app install --device SERIAL` and `oniro-app app launch --device SERIAL`, replacing `SERIAL` with that value.
 
-- After putting new values into preferences, call `flush()` which will save your data.
+## Use
 
->**Using data propagation - LocalStorage**
+1. Open **Add water**. Choose large or small glasses, enter a custom amount, or combine them, then tap **Add**.
+2. Check the updated total on **Today**. The glass illustration changes as the total approaches the fixed 2,000 ml goal.
+3. Open **Settings** to change the large and small glass sizes. Return to **Add water** to see the new amounts.
 
-- To communicate between business logic and the UI, we need to use a data propagation tool. Here we're using LocalStorage.
+## Explore the implementation
 
-- Within your business logic
+[EntryAbility.ets](entry/src/main/ets/entryability/EntryAbility.ets) creates the shared `LocalStorage` and loads the home page. [WaterKeeper.ets](entry/src/main/ets/entryability/WaterKeeper.ets) loads values from Preferences, publishes them to the UI, and flushes them when the app enters the background or the day changes. [Utility.ets](entry/src/main/ets/model/Utility.ets) defines the keys, default glass sizes, and goal. See [the implementation guide](docs/implementation.md) for the data flow.
 
-Declare and initialize an instance of LocalStorage. We've done so within the `onCreate()` method of our Ability
+## Verify
 
-```typescript
-private storage : LocalStorage;
+`oniro-app build` should finish with **BUILD SUCCESSFUL**. On a device or emulator, add water and check that the Today total changes. Change a glass size in Settings and check its value on Add water. Send the app to the background, relaunch it, and check that the total and glass sizes return.
 
-onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-    this.storage = new LocalStorage();
-}
+## Limitations
 
-```
+- Only the current day's total is shown. The app stores totals under date keys, but has no history screen.
+- The 2,000 ml goal is fixed in code.
+- Preferences are flushed when the app enters the background or the date changes; a sudden termination before either event can lose recent changes.
 
-- Create a variable that will serve as a link between business logic and UI
+## Contributing
 
-```typescript
-this.storage.setOrCreate("linkName", value);
-```
+These apps are focused examples of specific platform capabilities. Contributions that keep an example correct, buildable, and clear are welcome, including bug fixes, documentation and setup corrections, and improvements to its existing behavior. Please keep pull requests within the app's stated purpose and describe how you verified the change.
 
-- To read the data call
-```typescript
-this.storage.get("linkName);
-```
+**Found a problem but can't fix it?** Open an issue in this repository; a pull request is not required. For a bug or broken build, include the steps to reproduce it, what you expected, what happened, and your device, OS, and SDK/API version. Logs or screenshots are helpful when available. You can also open an issue for inaccurate or unclear documentation.
 
-- Within the UI
-Declare the storage, and mark it in the @Entry to your view.
-Declare and initialize a variable that will link to the variable created in business logic.
+## License
 
-```typescript
-let storage = LocalStorage.getShared();
-
-@Entry(storage)
-@Component
-struct Index {
-    @LocalStorageLink('linkName') private myVariable: string = "default value";
-```
-
-Once that is done, whenever `myVariable` is reassigned, the changes will be propagated to LocalStorage.
-
-### Checking and Testing
-- Since some actions in the app are asynchronous, using console logs was the preferred verification method.
-  All functionalities can be tested on the `Previewer` or on an `Emulator`.
+This project is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
