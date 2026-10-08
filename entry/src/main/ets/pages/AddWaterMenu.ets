@@ -6,9 +6,7 @@ interface QuantityButtonOptions {
   action: () => void;
 }
 
-const storage = LocalStorage.getShared();
-
-@Entry(storage)
+@Entry({ useSharedStorage: true })
 @Component
 struct AddWaterMenu {
   @State private bigGlassAmount: number = 0;
@@ -26,11 +24,10 @@ struct AddWaterMenu {
   }
 
   private saveWater(): void {
-    if (!(storage.get(Utility.dataReady) as boolean) || this.sumOfWater <= 0) {
+    if (!this.dataReady || this.sumOfWater <= 0) {
       return;
     }
     this.waterLevelInMilliLiters += this.sumOfWater;
-    storage.set(Utility.waterLevel, this.waterLevelInMilliLiters);
     this.getUIContext().getRouter().back();
   }
 

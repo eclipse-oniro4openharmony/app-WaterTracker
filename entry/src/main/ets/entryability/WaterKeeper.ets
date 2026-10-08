@@ -1,6 +1,5 @@
 import { Utility } from '../model/Utility';
 import { preferences } from '@kit.ArkData';
-import { intl } from '@kit.LocalizationKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 export class WaterKeeper {
@@ -27,23 +26,27 @@ export class WaterKeeper {
   }
 
   private prepareDateForUID(): string {
-    const dateFormat = new intl.DateTimeFormat('en-GB', { dateStyle: 'short' });
-    return dateFormat.format(new Date()).toString();
+    return new Date().toLocaleDateString('en-GB');
   }
 
   private async initialize(context: Context): Promise<void> {
-    const dataPreferences = await preferences.getPreferences(context, Utility.preferencesName);
-    const bigGlass = await dataPreferences.get(Utility.bigGlassDefaultName, Utility.bigGlassDefaultValue) as number;
-    const smallGlass = await dataPreferences.get(Utility.smallGlassDefaultName, Utility.smallGlassDefaultValue) as number;
-    const today = this.prepareDateForUID();
-    const waterLevel = await dataPreferences.get(today, 0) as number;
+    try {
+      const dataPreferences = await preferences.getPreferences(context, Utility.preferencesName);
+      const bigGlass = await dataPreferences.get(Utility.bigGlassDefaultName, Utility.bigGlassDefaultValue) as number;
+      const smallGlass = await dataPreferences.get(Utility.smallGlassDefaultName, Utility.smallGlassDefaultValue) as number;
+      const today = this.prepareDateForUID();
+      const waterLevel = await dataPreferences.get(today, 0) as number;
 
-    this.dataPreferences = dataPreferences;
-    this.currentDate = today;
-    this.storage.setOrCreate(Utility.bigGlassDefaultName, bigGlass);
-    this.storage.setOrCreate(Utility.smallGlassDefaultName, smallGlass);
-    this.storage.setOrCreate(Utility.waterLevel, waterLevel);
-    this.storage.setOrCreate(Utility.dataReady, true);
+      this.dataPreferences = dataPreferences;
+      this.currentDate = today;
+      this.storage.setOrCreate(Utility.bigGlassDefaultName, bigGlass);
+      this.storage.setOrCreate(Utility.smallGlassDefaultName, smallGlass);
+      this.storage.setOrCreate(Utility.waterLevel, waterLevel);
+      this.storage.setOrCreate(Utility.dataReady, true);
+    } catch (error) {
+      this.storage.setOrCreate(Utility.dataReady, false);
+      throw new Error('Failed to read saved water data: ' + String(error));
+    }
   }
 
   private async persistCurrentValues(): Promise<void> {
@@ -56,10 +59,14 @@ export class WaterKeeper {
     const smallGlass = this.storage.get(Utility.smallGlassDefaultName) as number;
     const waterLevel = this.storage.get(Utility.waterLevel) as number;
     const currentDate = this.currentDate;
-    await dataPreferences.put(Utility.bigGlassDefaultName, bigGlass);
-    await dataPreferences.put(Utility.smallGlassDefaultName, smallGlass);
-    await dataPreferences.put(currentDate, waterLevel);
-    await dataPreferences.flush();
+    try {
+      await dataPreferences.put(Utility.bigGlassDefaultName, bigGlass);
+      await dataPreferences.put(Utility.smallGlassDefaultName, smallGlass);
+      await dataPreferences.put(currentDate, waterLevel);
+      await dataPreferences.flush();
+    } catch (error) {
+      throw new Error('Failed to write water data: ' + String(error));
+    }
   }
 
   async saveToPersistence(): Promise<void> {
@@ -82,7 +89,12 @@ export class WaterKeeper {
     this.storage.setOrCreate(Utility.dataReady, false);
     try {
       await this.persistCurrentValues();
-      const waterLevel = await this.dataPreferences.get(today, 0) as number;
+      let waterLevel: number;
+      try {
+        waterLevel = await this.dataPreferences.get(today, 0) as number;
+      } catch (error) {
+        throw new Error('Failed to read water total for ' + today + ': ' + String(error));
+      }
       this.currentDate = today;
       this.storage.setOrCreate(Utility.waterLevel, waterLevel);
       this.storage.setOrCreate(Utility.dataReady, true);

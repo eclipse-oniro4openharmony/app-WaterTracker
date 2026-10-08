@@ -4,9 +4,9 @@ Water Tracker keeps the displayed values in ArkUI `LocalStorage` and stores sele
 
 ## Startup
 
-1. [EntryAbility.ets](../entry/src/main/ets/entryability/EntryAbility.ets) creates a `LocalStorage` instance in `onCreate`, passes it to `WaterKeeper`, and supplies it to `windowStage.loadContent`.
+1. [EntryAbility.ets](../entry/src/main/ets/entryability/EntryAbility.ets) creates a `LocalStorage` instance when the ability is initialized, passes it to `WaterKeeper` in `onCreate`, and supplies it to `windowStage.loadContent`.
 2. [WaterKeeper.ets](../entry/src/main/ets/entryability/WaterKeeper.ets) first publishes default glass sizes, a zero daily total, and `data_ready = false`. The buttons remain disabled while stored data loads.
-3. It calls `preferences.getPreferences(context, 'water')` from `@kit.ArkData`. It reads the saved glass sizes and today's total, using 200 ml, 100 ml, and 0 ml when keys are absent. The date is formatted with `intl.DateTimeFormat('en-GB', { dateStyle: 'short' })`.
+3. It calls `preferences.getPreferences(context, 'water')` from `@kit.ArkData`. It reads the saved glass sizes and today's total, using 200 ml, 100 ml, and 0 ml when keys are absent. The date key uses `Date.toLocaleDateString('en-GB')`.
 4. It copies those values into `LocalStorage` and sets `data_ready = true`.
 
 The storage keys and default values are defined in [Utility.ets](../entry/src/main/ets/model/Utility.ets).

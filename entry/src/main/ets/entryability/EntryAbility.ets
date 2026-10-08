@@ -4,18 +4,17 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 
 export default class EntryAbility extends UIAbility {
-  private waterKeeper !: WaterKeeper;
-  private storage !: LocalStorage;
+  private waterKeeper: WaterKeeper | undefined;
+  private storage: LocalStorage = new LocalStorage();
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
-    this.storage = new LocalStorage();
     this.waterKeeper = new WaterKeeper(this.context, this.storage);
   }
 
   onDestroy(): void {
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onDestroy');
-    this.waterKeeper.dispose();
+    this.waterKeeper?.dispose();
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
@@ -38,16 +37,20 @@ export default class EntryAbility extends UIAbility {
   onForeground(): void {
     // Ability has brought to foreground
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onForeground');
-    this.waterKeeper.refreshCurrentDay().catch((error: Error) => {
-      hilog.error(0x0000, 'WaterKeeper', 'Failed to change day: %{public}s', String(error));
-    });
+    if (this.waterKeeper) {
+      this.waterKeeper.refreshCurrentDay().catch((error: Error) => {
+        hilog.error(0x0000, 'WaterKeeper', 'Failed to change day: %{public}s', String(error));
+      });
+    }
   }
 
   onBackground(): void {
     // Ability has back to background
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onBackground');
-    this.waterKeeper.saveToPersistence().catch((error: Error) => {
-      hilog.error(0x0000, 'WaterKeeper', 'Failed to save water data: %{public}s', String(error));
-    });
+    if (this.waterKeeper) {
+      this.waterKeeper.saveToPersistence().catch((error: Error) => {
+        hilog.error(0x0000, 'WaterKeeper', 'Failed to save water data: %{public}s', String(error));
+      });
+    }
   }
 }
