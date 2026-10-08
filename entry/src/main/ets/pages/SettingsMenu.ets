@@ -1,8 +1,6 @@
 import { Utility } from '../model/Utility';
 
-const storage = LocalStorage.getShared();
-
-@Entry(storage)
+@Entry({ useSharedStorage: true })
 @Component
 struct SettingsMenu {
   @LocalStorageLink('small_glass_default') private defaultSmallGlass: number = Utility.smallGlassDefaultValue;

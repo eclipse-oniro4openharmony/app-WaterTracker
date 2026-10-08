@@ -1,8 +1,6 @@
 import { Utility } from '../model/Utility';
 
-const storage = LocalStorage.getShared();
-
-@Entry(storage)
+@Entry({ useSharedStorage: true })
 @Component
 struct Index {
   @LocalStorageProp('water_level') private waterState: number = 0;
